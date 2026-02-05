@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krish AI</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,73 +16,132 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <button class="new-chat-btn" onclick="clearChat()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="brand">
+                    <div class="brand-icon">K</div>
+                    <span class="brand-name">Krish AI</span>
+                </div>
+                <button class="new-chat-btn" onclick="clearChat()" title="New chat">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
-                    <span>New chat</span>
                 </button>
             </div>
             
             <div class="sidebar-content">
                 <div class="chat-history" id="chatHistory">
-                    <p class="empty-state">No previous chats</p>
+                    <div class="empty-state">
+                        <p>No conversations yet</p>
+                        <span>Start a new chat to begin</span>
+                    </div>
                 </div>
             </div>
             
             <div class="sidebar-footer">
-                <button class="sidebar-btn" onclick="toggleTheme()">
-                    <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button class="footer-btn" onclick="toggleTheme()">
+                    <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="5"/>
                         <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
                     </svg>
-                    <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                     </svg>
-                    <span class="theme-label">Dark mode</span>
+                    <span class="btn-label">Toggle theme</span>
                 </button>
             </div>
         </aside>
 
-        <!-- Overlay for mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <!-- Overlay -->
+        <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
         <!-- Main -->
         <main class="main">
-            <!-- Header -->
+            <!-- Mobile Header -->
             <header class="header">
-                <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+                <button class="header-btn" onclick="toggleSidebar()" aria-label="Menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 12h18M3 6h18M3 18h18"/>
                     </svg>
                 </button>
-                <h1 class="header-title">Krish AI</h1>
-                <div class="header-spacer"></div>
+                <span class="header-title">Krish AI</span>
+                <button class="header-btn" onclick="clearChat()" aria-label="New chat">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
             </header>
 
-            <!-- Chat -->
-            <div class="chat" id="chat">
-                <!-- Welcome -->
+            <!-- Chat Area -->
+            <div class="chat-area" id="chatArea">
+                <!-- Welcome State -->
                 <div class="welcome" id="welcome">
-                    <div class="welcome-icon">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                        </svg>
-                    </div>
-                    <h2>How can I help you today?</h2>
-                    <div class="suggestions">
-                        <button class="suggestion" onclick="usePrompt('What are the latest developments in AI?')">
-                            Latest AI developments
-                        </button>
-                        <button class="suggestion" onclick="usePrompt('Explain quantum computing simply')">
-                            Explain quantum computing
-                        </button>
-                        <button class="suggestion" onclick="usePrompt('Best practices for learning to code')">
-                            Learning to code
-                        </button>
-                        <button class="suggestion" onclick="usePrompt('Compare React vs Vue for web development')">
-                            React vs Vue
-                        </button>
+                    <div class="welcome-content">
+                        <div class="welcome-header">
+                            <div class="welcome-avatar">K</div>
+                            <div class="welcome-text">
+                                <h1>Krish AI</h1>
+                                <p>Your intelligent assistant for research, analysis, and creative tasks</p>
+                            </div>
+                        </div>
+                        
+                        <div class="capabilities">
+                            <div class="capability">
+                                <div class="capability-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                    </svg>
+                                </div>
+                                <div class="capability-text">
+                                    <strong>Research</strong>
+                                    <span>Find and synthesize information</span>
+                                </div>
+                            </div>
+                            <div class="capability">
+                                <div class="capability-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                                    </svg>
+                                </div>
+                                <div class="capability-text">
+                                    <strong>Build</strong>
+                                    <span>Write code and solve problems</span>
+                                </div>
+                            </div>
+                            <div class="capability">
+                                <div class="capability-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                                    </svg>
+                                </div>
+                                <div class="capability-text">
+                                    <strong>Create</strong>
+                                    <span>Draft content and brainstorm ideas</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="prompts">
+                            <p class="prompts-label">Try asking</p>
+                            <div class="prompt-list">
+                                <button class="prompt" onclick="usePrompt('Explain how machine learning works in simple terms')">
+                                    <span>Explain how machine learning works in simple terms</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                                <button class="prompt" onclick="usePrompt('Help me write a professional email to request a meeting')">
+                                    <span>Help me write a professional email to request a meeting</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                                <button class="prompt" onclick="usePrompt('What are the best practices for learning a new programming language?')">
+                                    <span>What are the best practices for learning a new programming language?</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -88,24 +149,24 @@
                 <div class="messages" id="messages"></div>
             </div>
 
-            <!-- Input -->
-            <div class="input-area">
+            <!-- Input Area -->
+            <div class="input-wrapper">
                 <div class="input-container">
                     <div class="input-box">
                         <textarea 
                             id="userInput" 
-                            placeholder="Message Krish AI..."
+                            placeholder="Ask anything..."
                             rows="1"
                             onkeydown="handleKeyDown(event)"
                             oninput="autoResize(this)"
                         ></textarea>
-                        <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send">
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send message">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                <path d="m5 12 7-7 7 7M12 19V5"/>
                             </svg>
                         </button>
                     </div>
-                    <p class="disclaimer">Krish AI can make mistakes. Verify important information.</p>
+                    <p class="disclaimer">Krish AI may produce inaccurate information. Verify important details.</p>
                 </div>
             </div>
         </main>

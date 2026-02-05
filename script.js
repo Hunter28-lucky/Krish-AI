@@ -16,16 +16,17 @@ let currentChatId = null;
 // ============================================
 function toggleTheme() {
     const body = document.body;
-    const currentTheme = body.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    body.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+    const current = body.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    body.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 
-        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.body.setAttribute('data-theme', savedTheme);
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+    document.body.setAttribute('data-theme', theme);
 }
 
 // ============================================
@@ -33,12 +34,11 @@ function loadTheme() {
 // ============================================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
+    const overlay = document.getElementById('overlay');
     const isOpen = sidebar.classList.contains('open');
     
     if (isOpen) {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('active');
+        closeSidebar();
     } else {
         sidebar.classList.add('open');
         overlay.classList.add('active');
@@ -46,10 +46,8 @@ function toggleSidebar() {
 }
 
 function closeSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.remove('open');
-    overlay.classList.remove('active');
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('active');
 }
 
 // ============================================
@@ -65,15 +63,16 @@ function clearChat() {
     document.getElementById('messages').innerHTML = '';
     document.getElementById('welcome').style.display = 'flex';
     closeSidebar();
+    document.getElementById('userInput').focus();
 }
 
 function saveCurrentChat() {
     if (messages.length === 0) return;
     
     const firstUserMsg = messages.find(m => m.role === 'user');
-    const title = firstUserMsg 
-        ? firstUserMsg.content.substring(0, 40) + (firstUserMsg.content.length > 40 ? '...' : '')
-        : 'New chat';
+    const title = firstUserMsg
+        ? firstUserMsg.content.substring(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '')
+        : 'New conversation';
     
     const chat = {
         id: currentChatId || Date.now().toString(),
@@ -84,7 +83,7 @@ function saveCurrentChat() {
     
     chatHistories = chatHistories.filter(c => c.id !== chat.id);
     chatHistories.unshift(chat);
-    chatHistories = chatHistories.slice(0, 20);
+    chatHistories = chatHistories.slice(0, 30);
     
     localStorage.setItem('chatHistories', JSON.stringify(chatHistories));
     renderChatHistory();
@@ -101,8 +100,7 @@ function loadChat(chatId) {
     currentChatId = chat.id;
     messages = [...chat.messages];
     
-    const messagesContainer = document.getElementById('messages');
-    messagesContainer.innerHTML = '';
+    document.getElementById('messages').innerHTML = '';
     document.getElementById('welcome').style.display = 'none';
     
     messages.forEach(msg => {
@@ -110,22 +108,50 @@ function loadChat(chatId) {
     });
     
     closeSidebar();
+    renderChatHistory();
+}
+
+function deleteChat(chatId, event) {
+    event.stopPropagation();
+    
+    // Remove from array
+    chatHistories = chatHistories.filter(c => c.id !== chatId);
+    
+    // Update localStorage
+    localStorage.setItem('chatHistories', JSON.stringify(chatHistories));
+    
+    // If deleting current chat, start new one
+    if (currentChatId === chatId) {
+        messages = [];
+        currentChatId = Date.now().toString();
+        document.getElementById('messages').innerHTML = '';
+        document.getElementById('welcome').style.display = 'flex';
+    }
+    
+    renderChatHistory();
 }
 
 function renderChatHistory() {
     const container = document.getElementById('chatHistory');
     
     if (chatHistories.length === 0) {
-        container.innerHTML = '<p class="empty-state">No previous chats</p>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No conversations yet</p>
+                <span>Start a new chat to begin</span>
+            </div>
+        `;
         return;
     }
     
     container.innerHTML = chatHistories.map(chat => `
         <div class="history-item ${chat.id === currentChatId ? 'active' : ''}" onclick="loadChat('${chat.id}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span>${escapeHtml(chat.title)}</span>
+            <span class="history-item-text">${escapeHtml(chat.title)}</span>
+            <button class="history-item-delete" onclick="deleteChat('${chat.id}', event)" title="Delete conversation">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+            </button>
         </div>
     `).join('');
 }
@@ -142,13 +168,13 @@ function escapeHtml(text) {
 function formatMessage(text) {
     let formatted = text;
     
-    // Clean HTML tags
+    // Clean HTML
     formatted = formatted.replace(/<br\s*\/?>/gi, '\n');
     formatted = formatted.replace(/<\/?p>/gi, '\n');
     formatted = formatted.replace(/<\/?div>/gi, '\n');
     formatted = formatted.replace(/<\/?span>/gi, '');
     
-    // Remove markdown tables
+    // Remove tables
     formatted = formatted.replace(/\|[^\n]+\|/g, match => {
         return match.replace(/\|/g, ' ').replace(/[-:]+/g, '').trim();
     });
@@ -185,7 +211,7 @@ function formatMessage(text) {
     // Links
     formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     
-    // Headers -> bold
+    // Headers
     formatted = formatted.replace(/^#{1,4}\s+(.*?)$/gm, '<strong>$1</strong>');
     
     // Lists
@@ -206,7 +232,7 @@ function formatMessage(text) {
         return `<p>${p}</p>`;
     }).filter(Boolean).join('');
     
-    // Wrap consecutive <li> in <ul>
+    // Wrap lists
     formatted = formatted.replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
     
     // Restore code blocks
@@ -214,7 +240,6 @@ function formatMessage(text) {
         formatted = formatted.replace(`__CODE_${i}__`, block);
     });
     
-    // Cleanup
     formatted = formatted.replace(/<p><\/p>/g, '');
     
     return formatted;
@@ -240,7 +265,7 @@ function copyMessage(content, button) {
             button.classList.remove('copied');
             button.innerHTML = `
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <rect x="9" y="9" width="13" height="13" rx="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                 </svg>
             `;
@@ -253,15 +278,13 @@ function copyMessage(content, button) {
 // ============================================
 function appendMessage(role, content) {
     const container = document.getElementById('messages');
-    const welcome = document.getElementById('welcome');
-    welcome.style.display = 'none';
+    document.getElementById('welcome').style.display = 'none';
     
     const div = document.createElement('div');
     div.className = `message ${role}`;
     
     const avatar = role === 'user' ? 'You' : 'K';
     const sender = role === 'user' ? 'You' : 'Krish AI';
-    
     const escapedContent = content.replace(/`/g, '\\`').replace(/\$/g, '\\$');
     
     div.innerHTML = `
@@ -273,7 +296,7 @@ function appendMessage(role, content) {
                 <div class="message-actions">
                     <button class="action-btn" onclick="copyMessage(\`${escapedContent}\`, this)" title="Copy">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <rect x="9" y="9" width="13" height="13" rx="2"/>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                         </svg>
                     </button>
@@ -317,12 +340,12 @@ function removeTypingIndicator() {
 }
 
 function scrollToBottom() {
-    const chat = document.getElementById('chat');
+    const chat = document.getElementById('chatArea');
     chat.scrollTop = chat.scrollHeight;
 }
 
 // ============================================
-// Input Handling
+// Input
 // ============================================
 function handleKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -333,7 +356,7 @@ function handleKeyDown(event) {
 
 function autoResize(textarea) {
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    textarea.style.height = Math.min(textarea.scrollHeight, 180) + 'px';
 }
 
 function usePrompt(prompt) {
@@ -344,8 +367,7 @@ function usePrompt(prompt) {
 
 function setLoading(loading) {
     isLoading = loading;
-    const btn = document.getElementById('sendBtn');
-    btn.disabled = loading;
+    document.getElementById('sendBtn').disabled = loading;
 }
 
 // ============================================
@@ -360,7 +382,6 @@ async function sendMessage() {
     input.value = '';
     input.style.height = 'auto';
     
-    // Add user message
     appendMessage('user', userMessage);
     messages.push({ role: 'user', content: userMessage });
     
