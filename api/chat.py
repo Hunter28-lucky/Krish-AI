@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler
 # ============================================
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 API_KEY = os.environ.get('OPENROUTER_API_KEY', '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')
-MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
+MODEL = "meta-llama/llama-3.2-3b-instruct:free"
 
 def chat_completion(messages):
     """Send messages to the API."""
@@ -18,11 +18,12 @@ def chat_completion(messages):
             headers={
                 "Authorization": f"Bearer {API_KEY}",
                 "Content-Type": "application/json",
+                "HTTP-Referer": "https://krish-ai-mauve.vercel.app",
+                "X-Title": "Krish AI"
             },
             json={
                 "model": MODEL,
-                "messages": messages,
-                "provider": {"sort": "throughput"}
+                "messages": messages
             },
             timeout=60
         )
