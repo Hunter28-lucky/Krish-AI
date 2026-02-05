@@ -236,70 +236,79 @@ function setLoading(loading, text = 'Thinking...') {
 }
 
 function formatMessage(text) {
-    // Convert markdown to HTML like ChatGPT
+    // Clean and convert markdown to HTML - natural chat style
     let formatted = text;
     
-    // Escape HTML first
+    // Step 1: Clean up raw HTML tags that shouldn't be there
+    formatted = formatted.replace(/<br\s*\/?>/gi, '\n');
+    formatted = formatted.replace(/<\/?p>/gi, '\n');
+    formatted = formatted.replace(/<\/?div>/gi, '\n');
+    formatted = formatted.replace(/<\/?span>/gi, '');
+    
+    // Step 2: Remove markdown tables and convert to simple text
+    formatted = formatted.replace(/\|[^\n]+\|/g, (match) => {
+        // Convert table row to simple comma-separated text
+        return match.replace(/\|/g, ' ').replace(/[-:]+/g, '').trim();
+    });
+    formatted = formatted.replace(/^[\s]*[-:]+[\s]*$/gm, ''); // Remove table separators
+    
+    // Step 3: Escape HTML for safety
     formatted = formatted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
-    // Code blocks with language
+    // Step 4: Process code blocks FIRST (preserve them)
+    const codeBlocks = [];
     formatted = formatted.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-        return `<div class="code-block"><div class="code-header"><span class="code-lang">${lang || 'code'}</span><button class="copy-code-btn" onclick="copyCode(this)">📋 Copy</button></div><pre><code>${code.trim()}</code></pre></div>`;
+        const placeholder = `__CODEBLOCK_${codeBlocks.length}__`;
+        codeBlocks.push(`<div class="code-block"><div class="code-header"><span class="code-lang">${lang || 'code'}</span><button class="copy-code-btn" onclick="copyCode(this)">📋 Copy</button></div><pre><code>${code.trim()}</code></pre></div>`);
+        return placeholder;
     });
     
-    // Inline code
+    // Step 5: Inline code
     formatted = formatted.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
     
-    // Bold
+    // Step 6: Bold and italic
     formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
-    // Italic
     formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
     
-    // Links
+    // Step 7: Links
     formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     
-    // Headers (must be at start of line)
-    formatted = formatted.replace(/^#### (.*?)$/gm, '<h4>$1</h4>');
-    formatted = formatted.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
-    formatted = formatted.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
-    formatted = formatted.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+    // Step 8: Headers (smaller, less intrusive)
+    formatted = formatted.replace(/^#{1,4}\s+(.*?)$/gm, '<strong>$1</strong>');
     
-    // Horizontal rule
-    formatted = formatted.replace(/^---$/gm, '<hr>');
+    // Step 9: Simple bullet points
+    formatted = formatted.replace(/^[\-\*]\s+(.*?)$/gm, '• $1');
     
-    // Unordered lists
-    formatted = formatted.replace(/^[\-\*] (.*?)$/gm, '<li>$1</li>');
-    formatted = formatted.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+    // Step 10: Numbered lists - keep simple
+    formatted = formatted.replace(/^(\d+)\.\s+(.*?)$/gm, '$1. $2');
     
-    // Ordered lists
-    formatted = formatted.replace(/^\d+\. (.*?)$/gm, '<li>$1</li>');
+    // Step 11: Blockquotes
+    formatted = formatted.replace(/^&gt;\s*(.*?)$/gm, '<blockquote>$1</blockquote>');
     
-    // Blockquotes
-    formatted = formatted.replace(/^&gt; (.*?)$/gm, '<blockquote>$1</blockquote>');
+    // Step 12: Convert paragraphs naturally
+    // Split by double newlines for paragraphs
+    const paragraphs = formatted.split(/\n\n+/);
+    formatted = paragraphs.map(p => {
+        p = p.trim();
+        if (!p) return '';
+        // Check for code block placeholders
+        if (p.includes('__CODEBLOCK_')) return p;
+        // Check if it's already a block element
+        if (p.startsWith('<blockquote') || p.startsWith('<div')) return p;
+        // Convert single newlines within paragraph to <br>
+        p = p.replace(/\n/g, '<br>');
+        return `<p>${p}</p>`;
+    }).filter(p => p).join('');
     
-    // Paragraphs - split by double newlines
-    const blocks = formatted.split(/\n\n+/);
-    formatted = blocks.map(block => {
-        block = block.trim();
-        if (!block) return '';
-        // Don't wrap if it's already a block element
-        if (block.startsWith('<h') || block.startsWith('<ul') || block.startsWith('<ol') || 
-            block.startsWith('<li') || block.startsWith('<blockquote') || block.startsWith('<div') ||
-            block.startsWith('<hr') || block.startsWith('<pre')) {
-            return block;
-        }
-        // Convert single newlines to <br> within paragraphs
-        block = block.replace(/\n/g, '<br>');
-        return `<p>${block}</p>`;
-    }).join('');
+    // Step 13: Restore code blocks
+    codeBlocks.forEach((block, i) => {
+        formatted = formatted.replace(`__CODEBLOCK_${i}__`, block);
+    });
     
-    // Clean up any remaining single newlines
-    formatted = formatted.replace(/\n/g, '');
-    
-    // Fix nested list issues
-    formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
-    formatted = formatted.replace(/<\/ol>\s*<ol>/g, '');
+    // Step 14: Clean up
+    formatted = formatted.replace(/<p><\/p>/g, '');
+    formatted = formatted.replace(/<br><br>/g, '</p><p>');
+    formatted = formatted.replace(/(<br>\s*)+$/g, '');
     
     return formatted;
 }
