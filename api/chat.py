@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler
 # CONFIGURATION
 # ============================================
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
-API_KEY = os.environ.get('OPENROUTER_API_KEY', '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')
+API_KEY = os.environ.get('OPENROUTER_API_KEY', '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')
 MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
 
 def chat_completion(messages):
