@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krish AI - Your Intelligent Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">✨</span>
+                    <span class="logo-text">Krish AI</span>
+                </div>
+            </div>
+            
+            <button class="new-chat-btn" onclick="clearChat()">
+                <span class="btn-icon">✨</span>
+                New Chat
+            </button>
+            
+            <div class="sidebar-section">
+                <h3>Features</h3>
+                <ul class="feature-list">
+                    <li>
+                        <span class="feature-icon">🔍</span>
+                        <span>Smart Web Search</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">🌐</span>
+                        <span>Website Analysis</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">🧠</span>
+                        <span>Deep Research</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">💬</span>
+                        <span>Natural Conversation</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section chat-history-section">
+                <h3>Recent Chats</h3>
+                <div class="chat-history" id="chatHistory">
+                    <p class="no-history">No chat history yet</p>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <p>Made with ❤️ by Krish</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1>Krish AI</h1>
+                <div class="header-actions">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Chat Container -->
+            <div class="chat-container" id="chatContainer">
+                <!-- Welcome Message -->
+                <div class="welcome-message" id="welcomeMessage">
+                    <div class="welcome-icon">✨</div>
+                    <h2>Hi, I'm Krish AI</h2>
+                    <p>Your intelligent assistant that can search the web, analyze websites, and help you with anything.</p>
+                    
+                    <div class="quick-prompts">
+                        <h3>Try asking:</h3>
+                        <div class="prompt-grid">
+                            <button class="prompt-btn" onclick="usePrompt('What are the latest developments in AI?')">
+                                <span class="prompt-icon">🔬</span>
+                                <span>Latest AI developments</span>
+                            </button>
+                            <button class="prompt-btn" onclick="usePrompt('Compare iPhone 16 vs Samsung Galaxy S26')">
+                                <span class="prompt-icon">📱</span>
+                                <span>Compare phones</span>
+                            </button>
+                            <button class="prompt-btn" onclick="usePrompt('Summarize https://news.ycombinator.com')">
+                                <span class="prompt-icon">📰</span>
+                                <span>Summarize a website</span>
+                            </button>
+                            <button class="prompt-btn" onclick="usePrompt('What are the best programming languages to learn in 2026?')">
+                                <span class="prompt-icon">💻</span>
+                                <span>Programming advice</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages will be added here -->
+                <div class="messages" id="messages"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-actions" id="inputActions" style="display: none;">
+                        <button class="action-btn" onclick="regenerateResponse()" title="Regenerate response">
+                            <span>🔄</span> Regenerate
+                        </button>
+                        <button class="action-btn" onclick="copyLastResponse()" title="Copy last response">
+                            <span>📋</span> Copy
+                        </button>
+                    </div>
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="userInput" 
+                            placeholder="Message Krish AI..."
+                            rows="1"
+                            onkeydown="handleKeyDown(event)"
+                            oninput="autoResize(this)"
+                        ></textarea>
+                        <button class="send-btn" onclick="sendMessage()" id="sendBtn">
+                            <span class="send-icon">➤</span>
+                        </button>
+                    </div>
+                    <p class="input-hint">Krish AI can make mistakes. Consider checking important info.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text" id="loadingText">Thinking...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
