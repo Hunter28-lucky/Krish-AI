@@ -20,7 +20,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "favicon.png",
+      "src": "icon.png",
       "use": "@vercel/static"
     },
     {
