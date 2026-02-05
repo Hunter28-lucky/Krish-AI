@@ -1,18 +1,15 @@
 import json
 import re
 import os
-from flask import Flask, request, jsonify
+import requests
 
-# Try to import required packages
+# Try to import optional packages
 try:
-    import requests
     from bs4 import BeautifulSoup
-    from ddgs import DDGS
+    from duckduckgo_search import DDGS
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
-
-app = Flask(__name__)
 
 # ============================================
 # CONFIGURATION
@@ -26,6 +23,8 @@ MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
 # ============================================
 def search_internet(query, max_results=3):
     """Search the internet using DuckDuckGo."""
+    if not DEPENDENCIES_AVAILABLE:
+        return None
     try:
         with DDGS() as ddgs:
             results = list(ddgs.text(query, max_results=max_results))
@@ -36,6 +35,8 @@ def search_internet(query, max_results=3):
 
 def scrape_webpage(url, max_chars=4000):
     """Scrape content from a webpage."""
+    if not DEPENDENCIES_AVAILABLE:
+        return {"error": "Dependencies not available", "status": "error"}
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
@@ -86,7 +87,6 @@ def chat_completion(messages):
         data=json.dumps({
             "model": MODEL,
             "messages": messages,
-            "reasoning": {"enabled": True},
             "provider": {"sort": "throughput"}
         })
     )
@@ -149,7 +149,7 @@ def execute_search_plan(plan):
     all_results = []
     executed_searches = []
     
-    for search in plan['searches'][:3]:  # Limit to 3 searches
+    for search in plan['searches'][:3]:
         query = search.get('query', '')
         purpose = search.get('purpose', '')
         
@@ -179,88 +179,98 @@ def execute_search_plan(plan):
     return "", []
 
 # ============================================
-# VERCEL HANDLER
+# VERCEL SERVERLESS HANDLER
 # ============================================
-@app.route('/', methods=['POST', 'OPTIONS'])
-@app.route('/api/chat', methods=['POST', 'OPTIONS'])
-def handler():
-    if request.method == 'OPTIONS':
-        response = jsonify({})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
-    
-    try:
-        data = request.get_json()
-        user_message = data.get('userMessage', '')
-        conversation = data.get('messages', [])
-        
-        search_info = {"searches": []}
-        context = ""
-        
-        # Check for URLs to scrape
-        urls = extract_urls(user_message)
-        if urls:
-            for url in urls[:2]:
-                result = scrape_webpage(url)
-                if result.get('status') == 'success':
-                    context += f"\n\n[SCRAPED: {result['title']}]\n{result['content']}\n[END SCRAPED]\n"
-        
-        # Create search plan if no URLs
-        if not urls:
-            plan = create_search_plan(user_message)
+from http.server import BaseHTTPRequestHandler
+from urllib.parse import parse_qs
+
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_POST(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
             
-            if plan.get('needs_search') and plan.get('searches'):
-                search_context, executed = execute_search_plan(plan)
-                context += search_context
-                search_info = {"searches": executed, "reasoning": plan.get('reasoning', '')}
-        
-        # Build messages for API
-        api_messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful AI assistant with web search capabilities. Provide comprehensive, well-formatted answers. Use markdown for formatting. Cite sources when using search results."
+            user_message = data.get('userMessage', '')
+            conversation = data.get('messages', [])
+            
+            search_info = {"searches": []}
+            context = ""
+            
+            # Check for URLs to scrape
+            urls = extract_urls(user_message)
+            if urls and DEPENDENCIES_AVAILABLE:
+                for url in urls[:2]:
+                    result = scrape_webpage(url)
+                    if result.get('status') == 'success':
+                        context += f"\n\n[SCRAPED: {result['title']}]\n{result['content']}\n[END SCRAPED]\n"
+            
+            # Create search plan if no URLs
+            if not urls and DEPENDENCIES_AVAILABLE:
+                plan = create_search_plan(user_message)
+                
+                if plan.get('needs_search') and plan.get('searches'):
+                    search_context, executed = execute_search_plan(plan)
+                    context += search_context
+                    search_info = {"searches": executed, "reasoning": plan.get('reasoning', '')}
+            
+            # Build messages for API
+            api_messages = [
+                {
+                    "role": "system",
+                    "content": "You are a helpful AI assistant with web search capabilities. Provide comprehensive, well-formatted answers. Use markdown for formatting. Cite sources when using search results."
+                }
+            ]
+            
+            # Add conversation history
+            for msg in conversation[-10:]:
+                api_messages.append({
+                    "role": msg.get('role', 'user'),
+                    "content": msg.get('content', '')
+                })
+            
+            # Add current message with context
+            if context:
+                api_messages.append({
+                    "role": "user",
+                    "content": user_message + context
+                })
+            else:
+                api_messages.append({
+                    "role": "user", 
+                    "content": user_message
+                })
+            
+            # Get response from AI
+            ai_response = chat_completion(api_messages)
+            
+            if 'choices' in ai_response:
+                content = ai_response['choices'][0]['message'].get('content', '')
+            else:
+                error_msg = ai_response.get('error', {}).get('message', 'Unknown error')
+                content = f"I'm sorry, I couldn't process your request. Error: {error_msg}"
+            
+            response_data = {
+                "content": content,
+                "searchInfo": search_info
             }
-        ]
-        
-        # Add conversation history
-        for msg in conversation[-10:]:  # Last 10 messages
-            api_messages.append({
-                "role": msg.get('role', 'user'),
-                "content": msg.get('content', '')
-            })
-        
-        # Add current message with context
-        if context:
-            api_messages.append({
-                "role": "user",
-                "content": user_message + context
-            })
-        else:
-            api_messages.append({
-                "role": "user", 
-                "content": user_message
-            })
-        
-        # Get response from AI
-        ai_response = chat_completion(api_messages)
-        
-        if 'choices' in ai_response:
-            content = ai_response['choices'][0]['message'].get('content', '')
-        else:
-            content = "I'm sorry, I couldn't process your request. Please try again."
-        
-        response_data = {
-            "content": content,
-            "searchInfo": search_info
-        }
-        
-        response = jsonify(response_data)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        return response
-        
-    except Exception as e:
-        response = jsonify({"error": str(e)})
-        response.status_code = 500
-        return response
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
