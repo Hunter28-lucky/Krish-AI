@@ -7,8 +7,8 @@ from http.server import BaseHTTPRequestHandler
 # CONFIGURATION
 # ============================================
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
-API_KEY = os.environ.get('OPENROUTER_API_KEY', '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')
-MODEL = "meta-llama/llama-3.2-3b-instruct:free"
+API_KEY = os.environ.get('OPENROUTER_API_KEY', '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')
+MODEL = "google/gemma-3-1b-it:free"
 
 def chat_completion(messages):
     """Send messages to the API."""
