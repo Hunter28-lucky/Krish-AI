@@ -3,26 +3,14 @@
   "builds": [
     {
       "src": "api/chat.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.js",
-      "use": "@vercel/static"
+      "use": "@vercel/python",
+      "config": { "runtime": "python3.9" }
     }
   ],
   "routes": [
     {
       "src": "/api/chat",
-      "dest": "/api/chat.py",
-      "methods": ["POST", "OPTIONS"]
+      "dest": "/api/chat.py"
     },
     {
       "src": "/(.*)",
